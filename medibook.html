@@ -1,0 +1,1402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MediBook — Appointment Management</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --teal-50: #e6f7f5; --teal-100: #b3e8e2; --teal-500: #0d9488; --teal-600: #0a7a70;
+    --teal-700: #086b62; --teal-900: #044a44;
+    --slate-50: #f8fafc; --slate-100: #f1f5f9; --slate-200: #e2e8f0;
+    --slate-400: #94a3b8; --slate-500: #64748b; --slate-600: #475569;
+    --slate-700: #334155; --slate-800: #1e293b; --slate-900: #0f172a;
+    --red-50: #fef2f2; --red-100:#fee2e2; --red-400: #f87171; --red-600: #dc2626;
+    --amber-50: #fffbeb; --amber-400: #fbbf24; --amber-600: #d97706;
+    --green-50: #f0fdf4; --green-400: #4ade80; --green-600: #16a34a;
+    --blue-50: #eff6ff; --blue-400: #60a5fa; --blue-600: #2563eb;
+    --orange-50:#fff7ed; --orange-600:#ea580c;
+    --white: #ffffff;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px; --radius-lg: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  body { font-family: var(--font); background: var(--slate-100); color: var(--slate-800); min-height: 100vh; display: flex; flex-direction: column; }
+
+  /* TOP NAV */
+  .topnav { background: var(--slate-900); color: var(--white); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .topnav-brand { display: flex; align-items: center; gap: 10px; }
+  .topnav-logo { width: 30px; height: 30px; background: var(--teal-500); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .topnav-logo svg { width: 16px; height: 16px; fill: none; stroke: white; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .topnav-title { font-size: 17px; font-weight: 600; letter-spacing: -0.3px; }
+  .topnav-right { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--slate-400); }
+  .topnav-dot { width: 8px; height: 8px; background: var(--teal-500); border-radius: 50%; }
+
+  /* LAYOUT */
+  .layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* SIDEBAR */
+  .sidebar { width: 220px; background: var(--white); border-right: 1px solid var(--slate-200); display: flex; flex-direction: column; padding: 20px 0; flex-shrink: 0; }
+  .sidebar-section { padding: 0 12px; margin-bottom: 6px; }
+  .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.8px; color: var(--slate-400); text-transform: uppercase; padding: 0 10px; margin-bottom: 4px; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius); font-size: 13.5px; font-weight: 400; color: var(--slate-600); cursor: pointer; transition: background 0.15s, color 0.15s; border: none; background: none; width: 100%; text-align: left; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; stroke: currentColor; }
+  .nav-item:hover { background: var(--slate-100); color: var(--slate-800); }
+  .nav-item.active { background: var(--teal-50); color: var(--teal-700); font-weight: 500; }
+  .sidebar-divider { height: 1px; background: var(--slate-200); margin: 10px 12px; }
+  .stat-mini { margin: 16px 12px 0; background: var(--teal-50); border-radius: var(--radius); padding: 12px; }
+  .stat-mini-label { font-size: 11px; color: var(--teal-700); margin-bottom: 4px; font-weight: 500; }
+  .stat-mini-nums { display: flex; gap: 10px; }
+  .stat-mini-num { text-align: center; }
+  .stat-mini-val { font-size: 20px; font-weight: 600; color: var(--teal-700); line-height: 1; }
+  .stat-mini-key { font-size: 10px; color: var(--teal-500); margin-top: 2px; }
+
+  /* MAIN */
+  .main { flex: 1; overflow-y: auto; padding: 28px; display: flex; flex-direction: column; gap: 22px; }
+
+  /* PAGE SECTIONS */
+  .page { display: none; flex-direction: column; gap: 22px; }
+  .page.active { display: flex; }
+
+  /* PAGE HEADER */
+  .page-header { display: flex; align-items: flex-start; justify-content: space-between; }
+  .page-title { font-size: 22px; font-weight: 600; color: var(--slate-900); letter-spacing: -0.5px; }
+  .page-subtitle { font-size: 13px; color: var(--slate-500); margin-top: 2px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .stat-card { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow); }
+  .stat-card-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .stat-card-icon { width: 34px; height: 34px; border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+  .stat-card-icon svg { width: 16px; height: 16px; }
+  .stat-card-val { font-size: 26px; font-weight: 600; color: var(--slate-900); line-height: 1; }
+  .stat-card-label { font-size: 12px; color: var(--slate-500); margin-top: 3px; }
+
+  /* CARD */
+  .card { background: var(--white); border: 1px solid var(--slate-200); border-radius: var(--radius-lg); box-shadow: var(--shadow); overflow: hidden; }
+  .card-header { padding: 16px 20px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--slate-800); white-space: nowrap; }
+  .card-body { padding: 20px; }
+
+  /* BUTTONS */
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; border-radius: var(--radius); font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all 0.15s; font-family: var(--font); }
+  .btn-primary { background: var(--teal-500); color: white; }
+  .btn-primary:hover { background: var(--teal-600); }
+  .btn-secondary { background: var(--slate-100); color: var(--slate-700); border: 1px solid var(--slate-200); }
+  .btn-secondary:hover { background: var(--slate-200); }
+  .btn-danger { background: var(--red-50); color: var(--red-600); border: 1px solid #fecaca; }
+  .btn-danger:hover { background: #fecaca; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; gap: 4px; }
+  .btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* SEARCH + FILTER BAR */
+  .toolbar { display: flex; align-items: center; gap: 10px; width: 100%; flex-wrap: wrap; }
+  .search-wrap { position: relative; flex: 1; min-width: 160px; }
+  .search-wrap svg { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: var(--slate-400); pointer-events: none; fill: none; stroke-width: 2; stroke-linecap: round; }
+  .search-input { width: 100%; padding: 8px 12px 8px 32px; border: 1px solid var(--slate-200); border-radius: var(--radius); font-size: 13px; font-family: var(--font); color: var(--slate-700); background: var(--white); outline: none; transition: border 0.15s; }
+  .search-input:focus { border-color: var(--teal-500); }
+  .filter-select { padding: 8px 12px; border: 1px solid var(--slate-200); border-radius: var(--radius); font-size: 13px; font-family: var(--font); color: var(--slate-700); background: var(--white); outline: none; cursor: pointer; }
+  .filter-select:focus { border-color: var(--teal-500); }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead th { text-align: left; padding: 10px 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--slate-500); background: var(--slate-50); border-bottom: 1px solid var(--slate-200); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--slate-100); transition: background 0.1s; }
+  tbody tr:hover { background: var(--slate-50); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody td { padding: 12px 14px; color: var(--slate-700); vertical-align: middle; }
+  .td-name { font-weight: 500; color: var(--slate-900); }
+  .td-id { font-family: var(--mono); font-size: 11px; color: var(--slate-400); }
+  .td-actions { display: flex; gap: 6px; }
+
+  /* BADGES */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .badge-scheduled { background: var(--blue-50); color: var(--blue-600); }
+  .badge-completed { background: var(--green-50); color: var(--green-600); }
+  .badge-cancelled { background: var(--red-50); color: var(--red-600); }
+  .badge-pending { background: var(--amber-50); color: var(--amber-600); }
+  .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+  /* AVATAR */
+  .avatar { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; }
+  .avatar-teal { background: var(--teal-50); color: var(--teal-700); }
+  .avatar-blue { background: var(--blue-50); color: var(--blue-600); }
+  .name-cell { display: flex; align-items: center; gap: 10px; }
+
+  /* MODAL OVERLAY */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 100; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--white); border-radius: var(--radius-lg); width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-md); }
+  .modal-header { padding: 18px 22px; border-bottom: 1px solid var(--slate-200); display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: white; z-index: 1; }
+  .modal-title { font-size: 15px; font-weight: 600; color: var(--slate-900); }
+  .modal-close { background: none; border: none; cursor: pointer; color: var(--slate-400); padding: 4px; border-radius: 6px; display: flex; }
+  .modal-close:hover { background: var(--slate-100); color: var(--slate-600); }
+  .modal-body { padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+  .modal-footer { padding: 16px 22px; border-top: 1px solid var(--slate-200); display: flex; justify-content: flex-end; gap: 10px; position: sticky; bottom: 0; background: white; }
+
+  /* FORM FIELDS */
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 12px; font-weight: 500; color: var(--slate-600); }
+  .form-input, .form-select, .form-textarea {
+    padding: 9px 12px; border: 1px solid var(--slate-200); border-radius: var(--radius);
+    font-size: 13px; font-family: var(--font); color: var(--slate-800); background: var(--white);
+    outline: none; transition: border 0.15s; width: 100%;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--teal-500); }
+  .form-input.error, .form-select.error { border-color: var(--red-400); background: var(--red-50); }
+  .form-textarea { resize: vertical; min-height: 72px; }
+  .form-hint { font-size: 11px; color: var(--slate-400); margin-top: 2px; }
+  .form-error-msg { font-size: 11px; color: var(--red-600); margin-top: 2px; display: none; }
+  .form-error-msg.show { display: block; }
+
+  /* INLINE ADD TOGGLE */
+  .inline-add-toggle { font-size: 12px; color: var(--teal-600); cursor: pointer; text-decoration: underline; margin-top: 4px; display: inline-block; }
+  .inline-add-toggle:hover { color: var(--teal-700); }
+  .inline-add-panel { background: var(--teal-50); border: 1px solid var(--teal-100); border-radius: var(--radius); padding: 14px; display: none; flex-direction: column; gap: 10px; margin-top: 6px; }
+  .inline-add-panel.open { display: flex; }
+  .inline-add-title { font-size: 12px; font-weight: 600; color: var(--teal-700); margin-bottom: 2px; }
+
+  /* WARNING BANNER */
+  .warning-banner { display: none; align-items: center; gap: 8px; padding: 10px 14px; border-radius: var(--radius); font-size: 12px; font-weight: 500; }
+  .warning-banner.show { display: flex; }
+  .warning-banner.warn { background: var(--amber-50); color: var(--amber-600); border: 1px solid #fde68a; }
+  .warning-banner.danger { background: var(--red-50); color: var(--red-600); border: 1px solid #fecaca; }
+  .warning-banner svg { width: 14px; height: 14px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; }
+
+  /* TOAST */
+  .toast-container { position: fixed; bottom: 24px; right: 24px; display: flex; flex-direction: column; gap: 8px; z-index: 300; pointer-events: none; }
+  .toast { background: var(--slate-900); color: white; padding: 11px 16px; border-radius: var(--radius); font-size: 13px; display: flex; align-items: center; gap: 8px; box-shadow: var(--shadow-md); pointer-events: auto; animation: toast-in 0.25s ease; min-width: 220px; }
+  .toast-success { border-left: 3px solid var(--teal-500); }
+  .toast-error { border-left: 3px solid var(--red-400); }
+  .toast-warn { border-left: 3px solid var(--amber-400); }
+  .toast-icon { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* DELETE CONFIRM */
+  .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 200; align-items: center; justify-content: center; }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box { background: var(--white); border-radius: var(--radius-lg); width: 380px; box-shadow: var(--shadow-md); overflow: hidden; }
+  .confirm-body { padding: 24px 22px; }
+  .confirm-icon { width: 40px; height: 40px; background: var(--red-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 14px; }
+  .confirm-icon svg { width: 18px; height: 18px; fill: none; stroke: var(--red-600); stroke-width: 2; }
+  .confirm-title { font-size: 15px; font-weight: 600; color: var(--slate-900); margin-bottom: 8px; }
+  .confirm-msg { font-size: 13px; color: var(--slate-500); line-height: 1.5; }
+  .confirm-footer { padding: 14px 22px; border-top: 1px solid var(--slate-200); display: flex; justify-content: flex-end; gap: 10px; }
+
+  /* EMPTY STATE */
+  .empty-state { text-align: center; padding: 48px 20px; color: var(--slate-500); }
+  .empty-state svg { width: 40px; height: 40px; stroke: var(--slate-300); margin: 0 auto 12px; display: block; fill: none; stroke-width: 1.5; }
+  .empty-title { font-size: 14px; font-weight: 500; color: var(--slate-600); margin-bottom: 4px; }
+  .empty-sub { font-size: 12px; }
+
+  .text-muted { color: var(--slate-500); font-size: 12px; }
+  .flex-between { display: flex; align-items: center; justify-content: space-between; }
+
+  /* SECTION DIVIDER inside modal */
+  .modal-section-divider { height: 1px; background: var(--slate-100); margin: 0 -22px; }
+</style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="topnav-brand">
+    <div class="topnav-logo">
+      <svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 8v4M12 16h.01"/></svg>
+    </div>
+    <div><div class="topnav-title">MediBook</div></div>
+  </div>
+  <div class="topnav-right">
+    <div class="topnav-dot"></div>
+    City General Hospital
+  </div>
+</nav>
+
+<!-- LAYOUT -->
+<div class="layout">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Menu</div>
+      <button class="nav-item active" id="nav-dashboard" onclick="showPage('dashboard', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </button>
+      <button class="nav-item" id="nav-appointments" onclick="showPage('appointments', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Appointments
+      </button>
+      <button class="nav-item" id="nav-patients" onclick="showPage('patients', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Patients
+      </button>
+      <button class="nav-item" id="nav-doctors" onclick="showPage('doctors', this)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 2h8a2 2 0 0 1 2 2v4a6 6 0 0 1-12 0V4a2 2 0 0 1 2-2z"/><path d="M12 14v7M9 17h6"/></svg>
+        Doctors
+      </button>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section">
+      <div class="stat-mini">
+        <div class="stat-mini-label">Today at a glance</div>
+        <div class="stat-mini-nums">
+          <div class="stat-mini-num"><div class="stat-mini-val" id="sb-today">0</div><div class="stat-mini-key">Today</div></div>
+          <div class="stat-mini-num"><div class="stat-mini-val" id="sb-pending">0</div><div class="stat-mini-key">Pending</div></div>
+          <div class="stat-mini-num"><div class="stat-mini-val" id="sb-done">0</div><div class="stat-mini-key">Done</div></div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main">
+
+    <!-- DASHBOARD PAGE -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Dashboard</div>
+          <div class="page-subtitle">Overview of hospital appointments</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          New Appointment
+        </button>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div><div class="stat-card-val" id="stat-total">0</div><div class="stat-card-label">Total Appointments</div></div>
+            <div class="stat-card-icon" style="background:var(--teal-50)">
+              <svg fill="none" stroke="var(--teal-600)" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div><div class="stat-card-val" id="stat-scheduled">0</div><div class="stat-card-label">Scheduled</div></div>
+            <div class="stat-card-icon" style="background:var(--blue-50)">
+              <svg fill="none" stroke="var(--blue-600)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div><div class="stat-card-val" id="stat-pending">0</div><div class="stat-card-label">Pending</div></div>
+            <div class="stat-card-icon" style="background:var(--amber-50)">
+              <svg fill="none" stroke="var(--amber-600)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div><div class="stat-card-val" id="stat-completed">0</div><div class="stat-card-label">Completed</div></div>
+            <div class="stat-card-icon" style="background:var(--green-50)">
+              <svg fill="none" stroke="var(--green-600)" stroke-width="2" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-top">
+            <div><div class="stat-card-val" id="stat-cancelled">0</div><div class="stat-card-label">Cancelled</div></div>
+            <div class="stat-card-icon" style="background:var(--red-50)">
+              <svg fill="none" stroke="var(--red-600)" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent Appointments</div>
+          <button class="btn btn-secondary btn-sm" onclick="showPage('appointments', document.getElementById('nav-appointments'))">View all</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Patient</th><th>Doctor</th><th>Date &amp; Time</th><th>Department</th><th>Status</th></tr></thead>
+            <tbody id="dash-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPOINTMENTS PAGE -->
+    <div class="page" id="page-appointments">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Appointments</div>
+          <div class="page-subtitle">Manage all hospital appointments</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          New Appointment
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input class="search-input" id="appt-search" placeholder="Search patient, doctor..." oninput="renderAppointments()"/>
+            </div>
+            <select class="filter-select" id="appt-filter-status" onchange="renderAppointments()">
+              <option value="">All Statuses</option>
+              <option value="Scheduled">Scheduled</option>
+              <option value="Completed">Completed</option>
+              <option value="Cancelled">Cancelled</option>
+              <option value="Pending">Pending</option>
+            </select>
+            <select class="filter-select" id="appt-filter-doctor" onchange="renderAppointments()">
+              <option value="">All Doctors</option>
+            </select>
+            <select class="filter-select" id="appt-filter-date" onchange="renderAppointments()">
+              <option value="">All Dates</option>
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="week">This Week</option>
+              <option value="past">Past</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>#</th><th>Patient</th><th>Doctor</th><th>Date &amp; Time</th><th>Department</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="appt-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PATIENTS PAGE -->
+    <div class="page" id="page-patients">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Patients</div>
+          <div class="page-subtitle">Registered patients directory</div>
+        </div>
+        <button class="btn btn-primary" onclick="openPatientModal()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Add Patient
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input class="search-input" id="pat-search" placeholder="Search patients..." oninput="renderPatients()"/>
+            </div>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Patient</th><th>Age</th><th>Gender</th><th>Blood Group</th><th>Contact</th><th>Appointments</th><th>Actions</th></tr></thead>
+            <tbody id="pat-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCTORS PAGE -->
+    <div class="page" id="page-doctors">
+      <div class="page-header">
+        <div>
+          <div class="page-title">Doctors</div>
+          <div class="page-subtitle">Medical staff directory</div>
+        </div>
+        <button class="btn btn-primary" onclick="openDoctorModal()">
+          <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+          Add Doctor
+        </button>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="toolbar">
+            <div class="search-wrap">
+              <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input class="search-input" id="doc-search" placeholder="Search doctors..." oninput="renderDoctors()"/>
+            </div>
+            <select class="filter-select" id="doc-filter-dept" onchange="renderDoctors()">
+              <option value="">All Departments</option>
+              <option>Cardiology</option><option>Neurology</option><option>Orthopaedics</option>
+              <option>Gynaecology</option><option>Paediatrics</option><option>Dermatology</option>
+              <option>General Medicine</option><option>ENT</option><option>Ophthalmology</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Doctor</th><th>Department</th><th>Specialisation</th><th>Availability</th><th>Appointments</th><th>Actions</th></tr></thead>
+            <tbody id="doc-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     APPOINTMENT MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="appt-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modal-heading">New Appointment</div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="edit-id"/>
+
+      <!-- PATIENT SECTION -->
+      <div class="form-group">
+        <label class="form-label">Patient *</label>
+        <select class="form-select" id="f-patient" onchange="onPatientSelect()"></select>
+        <span class="inline-add-toggle" onclick="toggleInlineAdd('patient')">+ Add new patient instead</span>
+        <div class="inline-add-panel" id="inline-patient-panel">
+          <div class="inline-add-title">New Patient Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-input" id="ip-name" placeholder="e.g. Arjun Mehta"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age *</label>
+              <input class="form-input" type="number" id="ip-age" min="1" max="120" placeholder="34"/>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Gender</label>
+              <select class="form-select" id="ip-gender"><option>Male</option><option>Female</option><option>Other</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Blood Group</label>
+              <select class="form-select" id="ip-blood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contact</label>
+            <input class="form-input" id="ip-contact" placeholder="+91 98765 43210"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- DOCTOR SECTION -->
+      <div class="form-group">
+        <label class="form-label">Doctor *</label>
+        <div class="form-row" style="gap:8px">
+          <select class="form-select" id="f-dept-filter" onchange="filterDoctorsByDept()" style="flex:0 0 160px">
+            <option value="">All Departments</option>
+            <option>Cardiology</option><option>Neurology</option><option>Orthopaedics</option>
+            <option>Gynaecology</option><option>Paediatrics</option><option>Dermatology</option>
+            <option>General Medicine</option><option>ENT</option><option>Ophthalmology</option>
+          </select>
+          <select class="form-select" id="f-doctor" onchange="onDoctorSelect()" style="flex:1"></select>
+        </div>
+        <span class="form-hint">Filter by department first to narrow the doctor list</span>
+        <!-- Doctor availability warning -->
+        <div class="warning-banner warn" id="doctor-avail-warn">
+          <svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>
+          <span id="doctor-avail-msg">This doctor is currently on leave.</span>
+        </div>
+        <span class="inline-add-toggle" onclick="toggleInlineAdd('doctor')">+ Add new doctor instead</span>
+        <div class="inline-add-panel" id="inline-doctor-panel">
+          <div class="inline-add-title">New Doctor Details</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-input" id="id-name" placeholder="e.g. Dr. Priya Sharma"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Department *</label>
+              <select class="form-select" id="id-dept">
+                <option>Cardiology</option><option>Neurology</option><option>Orthopaedics</option>
+                <option>Gynaecology</option><option>Paediatrics</option><option>Dermatology</option>
+                <option>General Medicine</option><option>ENT</option><option>Ophthalmology</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Specialisation</label>
+              <input class="form-input" id="id-spec" placeholder="e.g. Interventional Cardiologist"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Availability</label>
+              <select class="form-select" id="id-avail"><option>Available</option><option>On Leave</option><option>Full</option></select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-section-divider"></div>
+
+      <!-- DATE / TIME / DEPT / STATUS -->
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Date *</label>
+          <input class="form-input" type="date" id="f-date" onchange="checkConflict()"/>
+          <div class="form-error-msg" id="date-error">Date cannot be in the past.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Time *</label>
+          <input class="form-input" type="time" id="f-time" onchange="checkConflict()"/>
+        </div>
+      </div>
+      <!-- Conflict warning -->
+      <div class="warning-banner danger" id="conflict-warn">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>
+        <span id="conflict-msg">This doctor already has an appointment at this date and time.</span>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Department</label>
+          <select class="form-select" id="f-dept">
+            <option>Cardiology</option><option>Neurology</option><option>Orthopaedics</option>
+            <option>Gynaecology</option><option>Paediatrics</option><option>Dermatology</option>
+            <option>General Medicine</option><option>ENT</option><option>Ophthalmology</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f-status">
+            <option>Scheduled</option><option>Pending</option><option>Completed</option><option>Cancelled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="Reason for visit, symptoms..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAppointment()">Save Appointment</button>
+    </div>
+  </div>
+</div>
+
+<!-- PATIENT MODAL -->
+<div class="modal-overlay" id="pat-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="pat-modal-heading">Add Patient</div>
+      <button class="modal-close" onclick="closePatientModal()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="pat-edit-id"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" type="text" id="pf-name" placeholder="e.g. Arjun Mehta"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Age *</label>
+          <input class="form-input" type="number" id="pf-age" min="1" max="120" placeholder="e.g. 34"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select class="form-select" id="pf-gender"><option>Male</option><option>Female</option><option>Other</option></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Blood Group</label>
+          <select class="form-select" id="pf-blood"><option>A+</option><option>A-</option><option>B+</option><option>B-</option><option>AB+</option><option>AB-</option><option>O+</option><option>O-</option></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Contact Number</label>
+        <input class="form-input" type="text" id="pf-contact" placeholder="e.g. +91 98765 43210"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closePatientModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="savePatient()">Save Patient</button>
+    </div>
+  </div>
+</div>
+
+<!-- DOCTOR MODAL -->
+<div class="modal-overlay" id="doc-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="doc-modal-heading">Add Doctor</div>
+      <button class="modal-close" onclick="closeDoctorModal()">
+        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="doc-edit-id"/>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Full Name *</label>
+          <input class="form-input" type="text" id="df-name" placeholder="e.g. Dr. Priya Sharma"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Department *</label>
+          <select class="form-select" id="df-dept">
+            <option>Cardiology</option><option>Neurology</option><option>Orthopaedics</option>
+            <option>Gynaecology</option><option>Paediatrics</option><option>Dermatology</option>
+            <option>General Medicine</option><option>ENT</option><option>Ophthalmology</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Specialisation</label>
+          <input class="form-input" type="text" id="df-spec" placeholder="e.g. Interventional Cardiologist"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Availability</label>
+          <select class="form-select" id="df-avail"><option>Available</option><option>On Leave</option><option>Full</option></select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeDoctorModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveDoctor()">Save Doctor</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE CONFIRM -->
+<div class="confirm-overlay" id="confirm-overlay">
+  <div class="confirm-box">
+    <div class="confirm-body">
+      <div class="confirm-icon">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+      </div>
+      <div class="confirm-title" id="confirm-title">Delete this record?</div>
+      <div class="confirm-msg" id="confirm-msg">This action cannot be undone.</div>
+    </div>
+    <div class="confirm-footer">
+      <button class="btn btn-secondary" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  DATA LAYER — ID-based, localStorage-persisted
+// ══════════════════════════════════════════════════════════
+
+let patients = [];
+let doctors  = [];
+let appointments = [];
+let _pidSeq  = 1;   // numeric counters for collision-free IDs
+let _didSeq  = 1;
+let _aidSeq  = 1000;
+
+// ── Persistence ──────────────────────────────────────────
+function persist() {
+  try {
+    localStorage.setItem('mb_patients',     JSON.stringify(patients));
+    localStorage.setItem('mb_doctors',      JSON.stringify(doctors));
+    localStorage.setItem('mb_appointments', JSON.stringify(appointments));
+    localStorage.setItem('mb_pidSeq',       _pidSeq);
+    localStorage.setItem('mb_didSeq',       _didSeq);
+    localStorage.setItem('mb_aidSeq',       _aidSeq);
+  } catch(e) { /* storage unavailable — silently skip */ }
+}
+function loadPersisted() {
+  try {
+    const p = localStorage.getItem('mb_patients');
+    const d = localStorage.getItem('mb_doctors');
+    const a = localStorage.getItem('mb_appointments');
+    if (p && d && a) {
+      patients     = JSON.parse(p);
+      doctors      = JSON.parse(d);
+      appointments = JSON.parse(a);
+      _pidSeq  = parseInt(localStorage.getItem('mb_pidSeq')  || 1);
+      _didSeq  = parseInt(localStorage.getItem('mb_didSeq')  || 1);
+      _aidSeq  = parseInt(localStorage.getItem('mb_aidSeq')  || 1000);
+      return true;
+    }
+  } catch(e) {}
+  return false;
+}
+
+// ── ID generators ─────────────────────────────────────────
+function nextPid() { return 'P' + String(_pidSeq++).padStart(3,'0'); }
+function nextDid() { return 'D' + String(_didSeq++).padStart(3,'0'); }
+function nextAid() { return 'A' + (_aidSeq++); }
+
+// ── Seed data (only when nothing is persisted) ────────────
+function seedData() {
+  _pidSeq = 1; _didSeq = 1; _aidSeq = 1000;
+  patients = [
+    {id:'P001', name:'Arjun Mehta',   age:34, gender:'Male',   blood:'B+',  contact:'+91 98765 43210'},
+    {id:'P002', name:'Sunita Rao',    age:52, gender:'Female',  blood:'O+',  contact:'+91 87654 32109'},
+    {id:'P003', name:'Karthik Nair',  age:28, gender:'Male',   blood:'A+',  contact:'+91 76543 21098'},
+    {id:'P004', name:'Deepa Iyer',    age:45, gender:'Female',  blood:'AB+', contact:'+91 65432 10987'},
+    {id:'P005', name:'Ramesh Gupta',  age:60, gender:'Male',   blood:'O-',  contact:'+91 54321 09876'},
+  ];
+  _pidSeq = 6;
+  doctors = [
+    {id:'D001', name:'Dr. Priya Sharma',    dept:'Cardiology',   spec:'Interventional Cardiologist', avail:'Available'},
+    {id:'D002', name:'Dr. Anil Verma',      dept:'Neurology',    spec:'Neuro Surgeon',               avail:'Available'},
+    {id:'D003', name:'Dr. Meena Krishnan',  dept:'Paediatrics',  spec:'Child Specialist',            avail:'On Leave'},
+    {id:'D004', name:'Dr. Suresh Patel',    dept:'Orthopaedics', spec:'Joint Replacement',           avail:'Available'},
+  ];
+  _didSeq = 5;
+
+  const today    = new Date();
+  const fmt      = d => d.toISOString().split('T')[0];
+  const d0  = fmt(today);
+  const d1  = fmt(new Date(today - 86400000));
+  const d2  = fmt(new Date(today - 2*86400000));
+  const d3  = fmt(new Date(+today + 86400000));
+
+  appointments = [
+    {id:'A1000', patientId:'P001', doctorId:'D001', date:d0, time:'09:30', dept:'Cardiology',   status:'Scheduled', notes:'Follow-up after ECG'},
+    {id:'A1001', patientId:'P002', doctorId:'D002', date:d0, time:'11:00', dept:'Neurology',     status:'Completed', notes:'Headache and dizziness'},
+    {id:'A1002', patientId:'P003', doctorId:'D004', date:d1, time:'10:15', dept:'Orthopaedics',  status:'Completed', notes:'Knee pain assessment'},
+    {id:'A1003', patientId:'P004', doctorId:'D003', date:d2, time:'14:00', dept:'Paediatrics',   status:'Cancelled', notes:'Child fever — rescheduled'},
+    {id:'A1004', patientId:'P005', doctorId:'D001', date:d3, time:'08:45', dept:'Cardiology',    status:'Pending',   notes:'Chest discomfort'},
+  ];
+  _aidSeq = 1005;
+  persist();
+}
+
+// ── Lookup helpers (by ID) ────────────────────────────────
+function patientById(id)     { return patients.find(p => p.id === id) || null; }
+function doctorById(id)      { return doctors.find(d  => d.id === id) || null; }
+function patientName(id)     { const p = patientById(id); return p ? p.name : '(Removed)'; }
+function doctorName(id)      { const d = doctorById(id);  return d ? d.name : '(Removed)'; }
+function doctorDept(id)      { const d = doctorById(id);  return d ? d.dept : '—'; }
+
+// ══════════════════════════════════════════════════════════
+//  UTILS
+// ══════════════════════════════════════════════════════════
+function initials(name) { return name.split(' ').filter(Boolean).map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+function badgeHtml(status) {
+  const map = {Scheduled:'badge-scheduled', Completed:'badge-completed', Cancelled:'badge-cancelled', Pending:'badge-pending'};
+  return `<span class="badge ${map[status]||''}"><span class="badge-dot"></span>${status}</span>`;
+}
+
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y,m,day] = d.split('-');
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${day} ${months[parseInt(m)-1]} ${y}`;
+}
+function fmtTime(t) {
+  if (!t) return '';
+  const [h,min] = t.split(':');
+  const hr = parseInt(h);
+  return `${hr > 12 ? hr-12 : (hr===0?12:hr)}:${min} ${hr >= 12 ? 'PM':'AM'}`;
+}
+
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function toast(msg, type='success') {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  const icons = {
+    success: `<svg class="toast-icon" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>`,
+    error:   `<svg class="toast-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>`,
+    warn:    `<svg class="toast-icon" viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>`,
+  };
+  el.innerHTML = (icons[type]||icons.success) + msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function updateSidebar() {
+  const today = todayStr();
+  document.getElementById('sb-today').textContent   = appointments.filter(a => a.date === today).length;
+  document.getElementById('sb-pending').textContent  = appointments.filter(a => a.status === 'Pending').length;
+  document.getElementById('sb-done').textContent     = appointments.filter(a => a.status === 'Completed').length;
+}
+
+// ══════════════════════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════════════════════
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'dashboard')    renderDashboard();
+  if (name === 'appointments') { refreshDoctorFilter(); renderAppointments(); }
+  if (name === 'patients')     renderPatients();
+  if (name === 'doctors')      renderDoctors();
+}
+
+// ══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════════════════════
+function renderDashboard() {
+  document.getElementById('stat-total').textContent     = appointments.length;
+  document.getElementById('stat-scheduled').textContent = appointments.filter(a=>a.status==='Scheduled').length;
+  document.getElementById('stat-pending').textContent   = appointments.filter(a=>a.status==='Pending').length;
+  document.getElementById('stat-completed').textContent = appointments.filter(a=>a.status==='Completed').length;
+  document.getElementById('stat-cancelled').textContent = appointments.filter(a=>a.status==='Cancelled').length;
+
+  const tbody  = document.getElementById('dash-tbody');
+  const recent = [...appointments].sort((a,b) => b.id.localeCompare(a.id)).slice(0,5);
+  if (!recent.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><div class="empty-title">No appointments yet</div></div></td></tr>`;
+    updateSidebar(); return;
+  }
+  tbody.innerHTML = recent.map(a => `
+    <tr>
+      <td><div class="name-cell"><div class="avatar avatar-teal">${initials(patientName(a.patientId))}</div>
+          <div class="td-name">${patientName(a.patientId)}</div></div></td>
+      <td>${doctorName(a.doctorId)}</td>
+      <td>${fmtDate(a.date)} <span class="text-muted">${fmtTime(a.time)}</span></td>
+      <td>${a.dept}</td>
+      <td>${badgeHtml(a.status)}</td>
+    </tr>`).join('');
+  updateSidebar();
+}
+
+// ══════════════════════════════════════════════════════════
+//  APPOINTMENTS — render / filter
+// ══════════════════════════════════════════════════════════
+function refreshDoctorFilter() {
+  const sel = document.getElementById('appt-filter-doctor');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All Doctors</option>' +
+    doctors.map(d => `<option value="${d.id}" ${d.id===cur?'selected':''}>${d.name}</option>`).join('');
+}
+
+function renderAppointments() {
+  const search    = (document.getElementById('appt-search').value || '').toLowerCase();
+  const fStatus   = document.getElementById('appt-filter-status').value;
+  const fDoctor   = document.getElementById('appt-filter-doctor').value;
+  const fDate     = document.getElementById('appt-filter-date').value;
+  const today     = todayStr();
+  const tomorrow  = new Date(); tomorrow.setDate(tomorrow.getDate()+1);
+  const tomorrowStr = tomorrow.toISOString().split('T')[0];
+  const weekEnd   = new Date(); weekEnd.setDate(weekEnd.getDate()+7);
+  const weekStr   = weekEnd.toISOString().split('T')[0];
+
+  let rows = appointments.filter(a => {
+    const pName = patientName(a.patientId).toLowerCase();
+    const dName = doctorName(a.doctorId).toLowerCase();
+    if (search && !pName.includes(search) && !dName.includes(search) && !a.dept.toLowerCase().includes(search)) return false;
+    if (fStatus && a.status !== fStatus) return false;
+    if (fDoctor && a.doctorId !== fDoctor) return false;
+    if (fDate === 'today'    && a.date !== today) return false;
+    if (fDate === 'tomorrow' && a.date !== tomorrowStr) return false;
+    if (fDate === 'week'     && (a.date < today || a.date > weekStr)) return false;
+    if (fDate === 'past'     && a.date >= today) return false;
+    return true;
+  });
+
+  const tbody = document.getElementById('appt-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="empty-title">No appointments found</div>
+      <div class="empty-sub">Try adjusting your filters or add a new appointment</div>
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(a => `
+    <tr>
+      <td class="td-id">${a.id}</td>
+      <td><div class="name-cell"><div class="avatar avatar-teal">${initials(patientName(a.patientId))}</div>
+          <div class="td-name">${patientName(a.patientId)}</div></div></td>
+      <td>${doctorName(a.doctorId)}</td>
+      <td>${fmtDate(a.date)} <span class="text-muted">${fmtTime(a.time)}</span></td>
+      <td>${a.dept}</td>
+      <td>${badgeHtml(a.status)}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editAppointment('${a.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('appt','${a.id}','appointment for ${patientName(a.patientId).replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete
+        </button>
+      </div></td>
+    </tr>`).join('');
+  updateSidebar();
+}
+
+// ══════════════════════════════════════════════════════════
+//  APPOINTMENT MODAL — open / helpers / save
+// ══════════════════════════════════════════════════════════
+let _inlinePatientOpen = false;
+let _inlineDoctorOpen  = false;
+
+function toggleInlineAdd(type) {
+  if (type === 'patient') {
+    _inlinePatientOpen = !_inlinePatientOpen;
+    document.getElementById('inline-patient-panel').classList.toggle('open', _inlinePatientOpen);
+    document.getElementById('f-patient').disabled = _inlinePatientOpen;
+  } else {
+    _inlineDoctorOpen = !_inlineDoctorOpen;
+    document.getElementById('inline-doctor-panel').classList.toggle('open', _inlineDoctorOpen);
+    document.getElementById('f-doctor').disabled  = _inlineDoctorOpen;
+    document.getElementById('f-dept-filter').disabled = _inlineDoctorOpen;
+    if (_inlineDoctorOpen) hideWarning('doctor-avail-warn');
+  }
+}
+
+function filterDoctorsByDept() {
+  const dept = document.getElementById('f-dept-filter').value;
+  populateDoctorSelect(dept);
+  onDoctorSelect();
+}
+
+function populatePatientSelect() {
+  const sel = document.getElementById('f-patient');
+  sel.innerHTML = patients.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+}
+
+function populateDoctorSelect(deptFilter='') {
+  const sel  = document.getElementById('f-doctor');
+  const list = deptFilter ? doctors.filter(d => d.dept === deptFilter) : doctors;
+  if (!list.length) {
+    sel.innerHTML = `<option value="">No doctors in this department</option>`;
+  } else {
+    sel.innerHTML = list.map(d => {
+      const tag = d.avail !== 'Available' ? ` (${d.avail})` : '';
+      return `<option value="${d.id}">${d.name}${tag}</option>`;
+    }).join('');
+  }
+}
+
+function showWarning(id, msg) {
+  const el = document.getElementById(id);
+  el.classList.add('show');
+  if (msg) { const span = el.querySelector('span'); if (span) span.textContent = msg; }
+}
+function hideWarning(id) { document.getElementById(id).classList.remove('show'); }
+
+function onPatientSelect() { /* reserved for future per-patient warnings */ }
+
+function onDoctorSelect() {
+  if (_inlineDoctorOpen) return;
+  const did = document.getElementById('f-doctor').value;
+  const doc = doctorById(did);
+  if (doc && doc.avail !== 'Available') {
+    showWarning('doctor-avail-warn', `Warning: ${doc.name} is currently marked as "${doc.avail}".`);
+  } else {
+    hideWarning('doctor-avail-warn');
+  }
+  checkConflict();
+}
+
+function checkConflict() {
+  if (_inlineDoctorOpen) { hideWarning('conflict-warn'); return; }
+  const did  = document.getElementById('f-doctor').value;
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  const editId = document.getElementById('edit-id').value;
+  if (!did || !date || !time) { hideWarning('conflict-warn'); return; }
+
+  // Past-date check
+  const dateErr = document.getElementById('date-error');
+  if (date < todayStr()) {
+    dateErr.classList.add('show');
+    document.getElementById('f-date').classList.add('error');
+  } else {
+    dateErr.classList.remove('show');
+    document.getElementById('f-date').classList.remove('error');
+  }
+
+  // Double-booking check (allow 1-hour buffer = same slot only)
+  const conflict = appointments.find(a =>
+    a.id !== editId &&
+    a.doctorId === did &&
+    a.date === date &&
+    a.time === time &&
+    a.status !== 'Cancelled'
+  );
+  if (conflict) {
+    showWarning('conflict-warn', `Double-booking: ${doctorName(did)} already has an appointment at ${fmtTime(time)} on ${fmtDate(date)}.`);
+  } else {
+    hideWarning('conflict-warn');
+  }
+}
+
+function openModal(appt=null) {
+  // Reset inline panels
+  _inlinePatientOpen = false; _inlineDoctorOpen = false;
+  document.getElementById('inline-patient-panel').classList.remove('open');
+  document.getElementById('inline-doctor-panel').classList.remove('open');
+  document.getElementById('f-patient').disabled = false;
+  document.getElementById('f-doctor').disabled  = false;
+  document.getElementById('f-dept-filter').disabled = false;
+  hideWarning('doctor-avail-warn');
+  hideWarning('conflict-warn');
+  document.getElementById('date-error').classList.remove('show');
+  document.getElementById('f-date').classList.remove('error');
+
+  // Clear inline fields
+  ['ip-name','ip-age','ip-contact','id-name','id-spec'].forEach(id => { document.getElementById(id).value = ''; });
+
+  populatePatientSelect();
+  document.getElementById('f-dept-filter').value = '';
+  populateDoctorSelect('');
+
+  document.getElementById('edit-id').value = appt ? appt.id : '';
+  document.getElementById('modal-heading').textContent = appt ? 'Edit Appointment' : 'New Appointment';
+
+  if (appt) {
+    document.getElementById('f-patient').value = appt.patientId;
+    // restore dept filter from doctor's dept
+    const doc = doctorById(appt.doctorId);
+    if (doc) {
+      document.getElementById('f-dept-filter').value = doc.dept;
+      populateDoctorSelect(doc.dept);
+    }
+    document.getElementById('f-doctor').value  = appt.doctorId;
+    document.getElementById('f-date').value    = appt.date;
+    document.getElementById('f-time').value    = appt.time;
+    document.getElementById('f-dept').value    = appt.dept;
+    document.getElementById('f-status').value  = appt.status;
+    document.getElementById('f-notes').value   = appt.notes;
+    onDoctorSelect();
+  } else {
+    document.getElementById('f-date').value   = todayStr();
+    document.getElementById('f-time').value   = '09:00';
+    document.getElementById('f-dept').value   = 'Cardiology';
+    document.getElementById('f-status').value = 'Scheduled';
+    document.getElementById('f-notes').value  = '';
+  }
+  document.getElementById('appt-modal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('appt-modal').classList.remove('open'); }
+
+function saveAppointment() {
+  let patientId, doctorId;
+
+  // ── Resolve patient ───────────────────────────────────
+  if (_inlinePatientOpen) {
+    const name = document.getElementById('ip-name').value.trim();
+    const age  = document.getElementById('ip-age').value;
+    if (!name || !age) { toast('New patient requires a name and age', 'error'); return; }
+    const newPat = {
+      id: nextPid(), name, age: parseInt(age),
+      gender: document.getElementById('ip-gender').value,
+      blood:  document.getElementById('ip-blood').value,
+      contact: document.getElementById('ip-contact').value.trim(),
+    };
+    patients.push(newPat);
+    patientId = newPat.id;
+    toast(`Patient "${name}" added to directory`);
+  } else {
+    patientId = document.getElementById('f-patient').value;
+    if (!patientId) { toast('Please select a patient', 'error'); return; }
+  }
+
+  // ── Resolve doctor ────────────────────────────────────
+  if (_inlineDoctorOpen) {
+    const name = document.getElementById('id-name').value.trim();
+    if (!name) { toast('New doctor requires a name', 'error'); return; }
+    const newDoc = {
+      id: nextDid(), name,
+      dept:  document.getElementById('id-dept').value,
+      spec:  document.getElementById('id-spec').value.trim(),
+      avail: document.getElementById('id-avail').value,
+    };
+    doctors.push(newDoc);
+    doctorId = newDoc.id;
+    toast(`Doctor "${name}" added to directory`);
+  } else {
+    doctorId = document.getElementById('f-doctor').value;
+    if (!doctorId) { toast('Please select a doctor', 'error'); return; }
+  }
+
+  const date = document.getElementById('f-date').value;
+  const time = document.getElementById('f-time').value;
+  if (!date || !time) { toast('Date and time are required', 'error'); return; }
+
+  // Past-date guard
+  if (date < todayStr()) {
+    const proceed = confirm('The selected date is in the past. Book anyway?');
+    if (!proceed) return;
+  }
+
+  const editId = document.getElementById('edit-id').value;
+  const rec = {
+    patientId, doctorId, date, time,
+    dept:   document.getElementById('f-dept').value,
+    status: document.getElementById('f-status').value,
+    notes:  document.getElementById('f-notes').value.trim(),
+  };
+
+  if (editId) {
+    const idx = appointments.findIndex(a => a.id === editId);
+    appointments[idx] = { ...appointments[idx], ...rec };
+    toast('Appointment updated successfully');
+  } else {
+    rec.id = nextAid();
+    appointments.unshift(rec);
+    toast('Appointment booked successfully');
+  }
+
+  persist();
+  closeModal();
+  refreshDoctorFilter();
+  renderAppointments();
+  renderDashboard();
+}
+
+function editAppointment(id) { openModal(appointments.find(x => x.id === id)); }
+
+// ══════════════════════════════════════════════════════════
+//  PATIENTS CRUD
+// ══════════════════════════════════════════════════════════
+function renderPatients() {
+  const search = (document.getElementById('pat-search').value || '').toLowerCase();
+  const rows = patients.filter(p =>
+    p.name.toLowerCase().includes(search) || (p.contact||'').includes(search)
+  );
+  const tbody = document.getElementById('pat-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <div class="empty-title">No patients found</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map(p => {
+    const apptCount = appointments.filter(a => a.patientId === p.id).length;
+    return `<tr>
+      <td><div class="name-cell"><div class="avatar avatar-blue">${initials(p.name)}</div>
+          <div><div class="td-name">${p.name}</div><div class="td-id">${p.id}</div></div></div></td>
+      <td>${p.age}</td>
+      <td>${p.gender}</td>
+      <td><span class="badge badge-scheduled">${p.blood}</span></td>
+      <td>${p.contact||'—'}</td>
+      <td>${apptCount}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editPatient('${p.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('patient','${p.id}','${p.name.replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete
+        </button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openPatientModal(pat=null) {
+  document.getElementById('pat-edit-id').value = pat ? pat.id : '';
+  document.getElementById('pat-modal-heading').textContent = pat ? 'Edit Patient' : 'Add Patient';
+  document.getElementById('pf-name').value    = pat ? pat.name    : '';
+  document.getElementById('pf-age').value     = pat ? pat.age     : '';
+  document.getElementById('pf-gender').value  = pat ? pat.gender  : 'Male';
+  document.getElementById('pf-blood').value   = pat ? pat.blood   : 'A+';
+  document.getElementById('pf-contact').value = pat ? pat.contact : '';
+  document.getElementById('pat-modal').classList.add('open');
+}
+function closePatientModal() { document.getElementById('pat-modal').classList.remove('open'); }
+
+function savePatient() {
+  const name = document.getElementById('pf-name').value.trim();
+  const age  = document.getElementById('pf-age').value;
+  if (!name || !age) { toast('Name and age are required', 'error'); return; }
+  const editId = document.getElementById('pat-edit-id').value;
+  const rec = {
+    name, age: parseInt(age),
+    gender:  document.getElementById('pf-gender').value,
+    blood:   document.getElementById('pf-blood').value,
+    contact: document.getElementById('pf-contact').value.trim(),
+  };
+  if (editId) {
+    const idx = patients.findIndex(p => p.id === editId);
+    patients[idx] = { ...patients[idx], ...rec };
+    toast('Patient record updated');
+  } else {
+    rec.id = nextPid();
+    patients.push(rec);
+    toast('Patient added successfully');
+  }
+  persist();
+  closePatientModal();
+  renderPatients();
+}
+function editPatient(id) { openPatientModal(patients.find(p => p.id === id)); }
+
+// ══════════════════════════════════════════════════════════
+//  DOCTORS CRUD
+// ══════════════════════════════════════════════════════════
+function renderDoctors() {
+  const search = (document.getElementById('doc-search').value || '').toLowerCase();
+  const fDept  = document.getElementById('doc-filter-dept').value;
+  const rows = doctors.filter(d =>
+    (d.name.toLowerCase().includes(search) || d.spec.toLowerCase().includes(search)) &&
+    (!fDept || d.dept === fDept)
+  );
+  const tbody = document.getElementById('doc-tbody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="empty-state"><div class="empty-title">No doctors found</div></div></td></tr>`;
+    return;
+  }
+  const availBadge = s => s==='Available' ? 'badge-completed' : s==='On Leave' ? 'badge-pending' : 'badge-cancelled';
+  tbody.innerHTML = rows.map(d => {
+    const apptCount = appointments.filter(a => a.doctorId === d.id).length;
+    return `<tr>
+      <td><div class="name-cell"><div class="avatar avatar-teal">${initials(d.name)}</div>
+          <div><div class="td-name">${d.name}</div><div class="td-id">${d.id}</div></div></div></td>
+      <td>${d.dept}</td>
+      <td>${d.spec||'—'}</td>
+      <td><span class="badge ${availBadge(d.avail)}"><span class="badge-dot"></span>${d.avail}</span></td>
+      <td>${apptCount}</td>
+      <td><div class="td-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editDoctor('${d.id}')">
+          <svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          Edit
+        </button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRecord('doctor','${d.id}','${d.name.replace(/'/g,"\\'")}')">
+          <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+          Delete
+        </button>
+      </div></td>
+    </tr>`;
+  }).join('');
+}
+
+function openDoctorModal(doc=null) {
+  document.getElementById('doc-edit-id').value = doc ? doc.id : '';
+  document.getElementById('doc-modal-heading').textContent = doc ? 'Edit Doctor' : 'Add Doctor';
+  document.getElementById('df-name').value  = doc ? doc.name  : '';
+  document.getElementById('df-dept').value  = doc ? doc.dept  : 'Cardiology';
+  document.getElementById('df-spec').value  = doc ? doc.spec  : '';
+  document.getElementById('df-avail').value = doc ? doc.avail : 'Available';
+  document.getElementById('doc-modal').classList.add('open');
+}
+function closeDoctorModal() { document.getElementById('doc-modal').classList.remove('open'); }
+
+function saveDoctor() {
+  const name = document.getElementById('df-name').value.trim();
+  if (!name) { toast('Doctor name is required', 'error'); return; }
+  const editId = document.getElementById('doc-edit-id').value;
+  const rec = {
+    name,
+    dept:  document.getElementById('df-dept').value,
+    spec:  document.getElementById('df-spec').value.trim(),
+    avail: document.getElementById('df-avail').value,
+  };
+  if (editId) {
+    const idx = doctors.findIndex(d => d.id === editId);
+    doctors[idx] = { ...doctors[idx], ...rec };
+    toast('Doctor record updated');
+  } else {
+    rec.id = nextDid();
+    doctors.push(rec);
+    toast('Doctor added successfully');
+  }
+  persist();
+  closeDoctorModal();
+  renderDoctors();
+  refreshDoctorFilter();
+}
+function editDoctor(id) { openDoctorModal(doctors.find(d => d.id === id)); }
+
+// ══════════════════════════════════════════════════════════
+//  DELETE — with cascade warning
+// ══════════════════════════════════════════════════════════
+let _deleteTarget = null;
+
+function deleteRecord(type, id, label) {
+  _deleteTarget = {type, id};
+  let msg = `Delete "${label}"? This cannot be undone.`;
+  let title = 'Delete this record?';
+
+  if (type === 'patient') {
+    const count = appointments.filter(a => a.patientId === id).length;
+    if (count > 0) {
+      title = 'Delete patient and their appointments?';
+      msg   = `"${label}" has ${count} appointment${count>1?'s':''} linked to them. Deleting this patient will also remove all their appointments.`;
+    }
+  }
+  if (type === 'doctor') {
+    const count = appointments.filter(a => a.doctorId === id).length;
+    if (count > 0) {
+      title = 'Delete doctor and their appointments?';
+      msg   = `"${label}" has ${count} appointment${count>1?'s':''} assigned to them. Deleting this doctor will also remove all their appointments.`;
+    }
+  }
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  document.getElementById('confirm-overlay').classList.add('open');
+}
+
+function closeConfirm() { document.getElementById('confirm-overlay').classList.remove('open'); _deleteTarget = null; }
+
+function confirmDelete() {
+  if (!_deleteTarget) return;
+  const {type, id} = _deleteTarget;
+
+  if (type === 'appt') {
+    appointments = appointments.filter(a => a.id !== id);
+    toast('Appointment deleted');
+  }
+  if (type === 'patient') {
+    const before = appointments.length;
+    appointments = appointments.filter(a => a.patientId !== id);
+    patients     = patients.filter(p => p.id !== id);
+    const removed = before - appointments.length;
+    toast(`Patient removed${removed ? ` · ${removed} appointment${removed>1?'s':''} also deleted` : ''}`);
+    renderPatients();
+  }
+  if (type === 'doctor') {
+    const before = appointments.length;
+    appointments = appointments.filter(a => a.doctorId !== id);
+    doctors      = doctors.filter(d => d.id !== id);
+    const removed = before - appointments.length;
+    toast(`Doctor removed${removed ? ` · ${removed} appointment${removed>1?'s':''} also deleted` : ''}`);
+    renderDoctors();
+    refreshDoctorFilter();
+  }
+
+  persist();
+  renderAppointments();
+  renderDashboard();
+  updateSidebar();
+  closeConfirm();
+}
+
+// ══════════════════════════════════════════════════════════
+//  CLOSE ON OVERLAY CLICK
+// ══════════════════════════════════════════════════════════
+['appt-modal','pat-modal','doc-modal','confirm-overlay'].forEach(id => {
+  document.getElementById(id).addEventListener('click', e => {
+    if (e.target === e.currentTarget) {
+      if (id === 'appt-modal')       closeModal();
+      if (id === 'pat-modal')        closePatientModal();
+      if (id === 'doc-modal')        closeDoctorModal();
+      if (id === 'confirm-overlay')  closeConfirm();
+    }
+  });
+});
+
+// ══════════════════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════════════════
+if (!loadPersisted()) seedData();
+renderDashboard();
+</script>
+</body>
+</html>
